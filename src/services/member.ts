@@ -1,0 +1,29 @@
+import {apiRequest} from './api';
+import type {AdvisorMessage,AdvisorSubscription,BodyProfile,CheckoutOrder,MemberHealthPlan,ProductSubscription,User} from './types';
+export interface ProgressItem{item:string;key:string;completed:boolean;completedAt:string|null;autoTracked?:boolean}
+export interface WeightLog{id:string;weightLbs:number;loggedAt:string}
+export interface MemberCheckin{id:string;energyScore:number|null;adherenceScore:number|null;sleepHours:number|null;note:string;createdAt:string}
+export interface NutritionLog{id:string;proteinGrams:number;carbsGrams:number;hydrationOz:number;loggedOn:string;createdAt:string}
+export interface MemberProgress{weekStart:string;weeklyTargets:ProgressItem[];workouts:ProgressItem[];weeklyCompleted:number;weeklyTotal:number;workoutCompleted:number;workoutTotal:number;recentWeights:WeightLog[];latestWeight:WeightLog|null;recentCheckins:MemberCheckin[];latestCheckin:MemberCheckin|null;checkinThisWeek:boolean;nutrition?:{today:NutritionLog|null;recent:NutritionLog[];targets:{proteinGrams:number;carbsGrams:number;hydrationOz:number}};history?:any[];totalActivityCount?:number}
+export interface DashboardData{user:User;plan:MemberHealthPlan|null;order:CheckoutOrder|null;subscription:AdvisorSubscription|null;progress:MemberProgress}
+export interface AdvisorData{enabled:boolean;entitled:boolean;configured:boolean;subscription:AdvisorSubscription|null;messages:AdvisorMessage[];rateLimit:{limit:number;used:number;remaining:number};scope:string}
+export const loadDashboard=()=>apiRequest<DashboardData>('/me/dashboard');
+export const loadOrders=()=>apiRequest<{orders:CheckoutOrder[]}>('/me/orders').then(r=>r.orders||[]);
+export const loadProfile=()=>apiRequest<{user:User}>('/me/profile').then(r=>r.user);
+export const updateProfile=(input:Partial<User>)=>apiRequest<{user:User}>('/me/profile',{method:'PUT',body:JSON.stringify(input)}).then(r=>r.user);
+export const loadSubscription=()=>apiRequest<{subscription:AdvisorSubscription|null}>('/me/subscription').then(r=>r.subscription);
+export const loadProductSubscriptions=()=>apiRequest<{subscriptions:ProductSubscription[]}>('/me/product-subscriptions').then(r=>r.subscriptions||[]);
+export const loadAdvisor=()=>apiRequest<AdvisorData>('/me/advisor');
+export const sendAdvisorMessage=(message:string)=>apiRequest<{userMessage:AdvisorMessage;assistantMessage:AdvisorMessage}>('/me/advisor/messages',{method:'POST',body:JSON.stringify({message})});
+export const clearAdvisorMessages=()=>apiRequest('/me/advisor/messages',{method:'DELETE'});
+export const cancelAdvisorSubscription=()=>apiRequest<{subscription:AdvisorSubscription}>('/me/subscription/cancel',{method:'POST'}).then(r=>r.subscription);
+export const resumeAdvisorSubscription=()=>apiRequest<{subscription:AdvisorSubscription}>('/me/subscription/resume',{method:'POST'}).then(r=>r.subscription);
+export const cancelProductSubscription=(id:string,confirmAdvisorPaidConversion=false)=>apiRequest<{subscription:ProductSubscription;advisorWillBecomePaid?:boolean}>(`/me/product-subscriptions/${encodeURIComponent(id)}/cancel`,{method:'POST',body:JSON.stringify({confirmAdvisorPaidConversion})});
+export const togglePlanProgress=(itemType:'weekly_target'|'workout',item:string,completed:boolean)=>apiRequest<{progress:MemberProgress}>('/me/progress/toggle',{method:'POST',body:JSON.stringify({itemType,item,completed})}).then(r=>r.progress);
+export const logWeight=(weightLbs:number)=>apiRequest<{progress:MemberProgress}>('/me/weight-log',{method:'POST',body:JSON.stringify({weightLbs})}).then(r=>r.progress);
+export const submitCheckin=(input:{energyScore?:number;adherenceScore?:number;sleepHours?:number;note?:string})=>apiRequest<{progress:MemberProgress}>('/me/checkins',{method:'POST',body:JSON.stringify(input)}).then(r=>r.progress);
+export const logNutrition=(input:{proteinGrams:number;carbsGrams:number;hydrationOz:number})=>apiRequest<{progress:MemberProgress}>('/me/nutrition-log',{method:'POST',body:JSON.stringify(input)}).then(r=>r.progress);
+export const submitReviewerResponse=(response:string)=>apiRequest<{plan:MemberHealthPlan}>('/me/reviewer-response',{method:'POST',body:JSON.stringify({response})}).then(r=>r.plan);
+export const regenerateMealPlan=()=>apiRequest<{plan:MemberHealthPlan}>('/me/meal-plan/regenerate',{method:'POST'}).then(r=>r.plan);
+export const loadBodyProfile=()=>apiRequest<{bodyProfile:BodyProfile|null}>('/me/body-profile').then(r=>r.bodyProfile);
+export const deleteBodyProfile=()=>apiRequest('/me/body-profile',{method:'DELETE'});
