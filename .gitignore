@@ -1,1 +1,3 @@
 .expo/
+config.bat
+node_modules
